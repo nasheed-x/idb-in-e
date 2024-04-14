@@ -122,7 +122,7 @@ void sendHS300xData()
 void setup()
 {
   Serial.begin(9600);
-  while (!Serial);  // Wait for serial port to connect
+  // while (!Serial);  // Wait for serial port to connect
 
   setupLoRa();  // Initialize LoRa communication
 
