@@ -170,7 +170,7 @@ void loop()
   { 
     lastCheck = millis();
     sendLPS22HBData();
-    // sendIMUMagnetometer();
+    sendIMUMagnetometer();
     sendIMUAcceleration();
     sendIMUGyroscope();
     sendHS300xData();

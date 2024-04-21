@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            align-items: flex-start;
+        }
+
+        h1 {
+            width: 100%;
+            text-align: center;
+            color: #333;
+            margin-top: 20px;
+        }
+
+        .sensor-box {
+            flex-basis: calc(33% - 40px);
+            /* Adjust width of boxes here */
+            background: white;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            min-width: 250px;
+            /* Adjust minimum width of boxes here */
+        }
+
+        .sensor-box h2 {
+            color: #555;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 1.2em;
+        }
+
+        .sensor-data {
+            background: #eef;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 5px solid #88a;
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Sensor Dashboard</h1>
+    <div id="sensorGPS" class="sensor-box">
+        <h2>GPS (SAM-M10Q)</h2>
+    </div>
+    <div id="sensorBarometric" class="sensor-box">
+        <h2>Barometric (LPS22HB)</h2>
+    </div>
+    <div id="sensorIMUAccel" class="sensor-box">
+        <h2>IMU Acceleration (BMI270)</h2>
+    </div>
+    <div id="sensorIMUGyro" class="sensor-box">
+        <h2>IMU Gyroscope (BMI270)</h2>
+    </div>
+    <div id="sensorIMUMagnet" class="sensor-box">
+        <h2>IMU Magnetometer (BMM150)</h2>
+    </div>
+    <div id="sensorTemperature" class="sensor-box">
+        <h2>Temperature & Humidity (HS300x)</h2>
+    </div>
+
+    <script>
+        const ws = new WebSocket('ws://localhost:3000');
+
+        ws.onopen = function () {
+            console.log('WebSocket connection established');
+        };
+
+        ws.onerror = function (error) {
+            console.error('WebSocket Error:', error);
+        };
+
+        ws.onmessage = function (event) {
+            console.log('Data received:', event.data);
+            displaySensorData(JSON.parse(event.data));
+        };
+
+        ws.onclose = function () {
+            console.log('WebSocket connection closed');
+        };
+
+        function displaySensorData(data) {
+            // Extract the sensor ID and the data from the received object
+            const { sensorId, data: sensorValues } = data;
+
+            // Map the sensor ID to the corresponding element ID
+            const sensorMap = {
+                1: 'sensorGPS',
+                2: 'sensorBarometric',
+                3: 'sensorIMUAccel',
+                4: 'sensorIMUGyro',
+                5: 'sensorIMUMagnet',
+                6: 'sensorTemperature'
+            };
+
+            // Find the corresponding element ID
+            const elementId = sensorMap[sensorId];
+            if (elementId) {
+                updateSensorBox(elementId, data);
+            } else {
+                console.error('Unknown sensor ID:', sensorId);
+            }
+        }
+
+        function updateSensorBox(boxId, sensorData) {
+            const box = document.getElementById(boxId);
+            if (!box) {
+                console.error('Box not found:', boxId);
+                return;
+            }
+            // Clear the box except the title
+            box.innerHTML = `<h2>${box.querySelector('h2').textContent}</h2>`;
+
+            // Use only the 'data' property from sensorData
+            const data = sensorData.data;
+            for (const [key, value] of Object.entries(data)) {
+                // Create div for each key-value pair
+                const dataDiv = document.createElement('div');
+                dataDiv.classList.add('sensor-data');
+                // Append units if applicable and format GPS coordinates
+                dataDiv.textContent = `${key}: ${formatData(key, value)}`;
+                box.appendChild(dataDiv);
+            }
+        }
+
+        function formatData(key, value) {
+            // Define units for known data types
+            const units = {
+                'Temperature': '°C',
+                'Humidity': '%',
+                'Pressure': 'kPa',
+                'Altitude': 'm',
+                'X-Acceleration': 'Gs',
+                'Y-Acceleration': 'Gs',
+                'Z-Acceleration': 'Gs',
+                'X-Gyro': '°/s',
+                'Y-Gyro': '°/s',
+                'Z-Gyro': '°/s',
+                'X-Magnet': 'µT',
+                'Y-Magnet': 'µT',
+                'Z-Magnet': 'µT'
+            };
+
+            // Special formatting for GPS coordinates
+            if (key === 'Latitude' || key === 'Longitude') {
+                // Assuming the value is an integer representing the lat/lon in degrees multiplied by 10^7
+                return (value / 10000000).toFixed(7); // Adjust the number of decimal places as needed
+            }
+
+            // Append unit if available
+            return `${value}${units[key] || ''}`;
+        }
+
+        // function formatCoordinates(key, value) {
+        //     // Assuming the value is in decimal degrees (DD)
+        //     const direction = value < 0 ? (key === 'Latitude' ? 'S' : 'W') : (key === 'Latitude' ? 'N' : 'E');
+        //     value = Math.abs(value);
+        //     // Convert to Degrees, Minutes, Seconds (DMS)
+        //     const degrees = Math.floor(value);
+        //     const minutesNotTruncated = (value - degrees) * 60;
+        //     const minutes = Math.floor(minutesNotTruncated);
+        //     const seconds = Math.floor((minutesNotTruncated - minutes) * 60);
+        //     return `${degrees}° ${minutes}' ${seconds}" ${direction}`;
+        // }
+    </script>
+</body>
+
+</html>
