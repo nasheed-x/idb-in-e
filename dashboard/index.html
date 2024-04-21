@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,12 +18,14 @@
             justify-content: space-around;
             align-items: flex-start;
         }
+
         h1 {
             width: 100%;
             text-align: center;
             color: #333;
             margin-top: 20px;
         }
+
         .sensor-box {
             flex-basis: calc(33% - 40px);
             background: white;
@@ -32,12 +35,14 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             min-width: 250px;
         }
+
         .sensor-box h2 {
             color: #555;
             margin-bottom: 15px;
             text-align: center;
             font-size: 1.2em;
         }
+
         .sensor-data {
             background: #eef;
             margin-bottom: 10px;
@@ -46,36 +51,58 @@
             border-left: 5px solid #88a;
             font-size: 16px;
         }
+
+        .timestamp {
+            display: block;
+            margin-top: 5px;
+            color: #999;
+            font-size: 0.8em;
+        }
+
+
         #map {
             height: 500px;
             width: calc(85%);
             margin: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
+
 <body>
     <h1>IDB(IN)E Sensor Dashboard</h1>
     <div id="map"></div>
-    <div id="sensorGPS" class="sensor-box"><h2>GPS (SAM-M10Q)</h2></div>
-    <div id="sensorBarometric" class="sensor-box"><h2>Barometric (LPS22HB)</h2></div>
-    <div id="sensorIMUAccel" class="sensor-box"><h2>IMU Acceleration (BMI270)</h2></div>
-    <div id="sensorIMUGyro" class="sensor-box"><h2>IMU Gyroscope (BMI270)</h2></div>
-    <div id="sensorIMUMagnet" class="sensor-box"><h2>IMU Magnetometer (BMM150)</h2></div>
-    <div id="sensorTemperature" class="sensor-box"><h2>Temperature & Humidity (HS300x)</h2></div>
-    
+    <div id="sensorGPS" class="sensor-box">
+        <h2>GPS (SAM-M10Q)</h2>
+    </div>
+    <div id="sensorBarometric" class="sensor-box">
+        <h2>Barometric (LPS22HB)</h2>
+    </div>
+    <div id="sensorIMUAccel" class="sensor-box">
+        <h2>IMU Acceleration (BMI270)</h2>
+    </div>
+    <div id="sensorIMUGyro" class="sensor-box">
+        <h2>IMU Gyroscope (BMI270)</h2>
+    </div>
+    <div id="sensorIMUMagnet" class="sensor-box">
+        <h2>IMU Magnetometer (BMM150)</h2>
+    </div>
+    <div id="sensorTemperature" class="sensor-box">
+        <h2>Temperature & Humidity (HS300x)</h2>
+    </div>
+
     <!-- Include Leaflet JavaScript -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
         // Initialize the map when the window loads
-        window.onload = function() {
+        window.onload = function () {
             const map = L.map('map').setView([0, 0], 2);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '© OpenStreetMap contributors'
             }).addTo(map);
-            
+
             let marker;
 
             const ws = new WebSocket('ws://localhost:3000');
@@ -121,10 +148,19 @@
 
             function updateSensorBox(boxId, sensorData) {
                 const box = document.getElementById(boxId);
+                if (!box) {
+                    console.error('Box not found:', boxId);
+                    return;
+                }
+                // Get current timestamp
+                const now = new Date();
+                const timestamp = now.toLocaleTimeString(); // you can use toLocaleString() for date and time
+
                 box.innerHTML = `<h2>${box.querySelector('h2').textContent}</h2>`; // Clear old data
                 Object.entries(sensorData).forEach(([key, value]) => {
                     const valueWithUnit = formatData(key, value);
-                    box.innerHTML += `<div class="sensor-data">${key}: ${valueWithUnit}</div>`;
+                    // Include the timestamp in the updated data
+                    box.innerHTML += `<div class="sensor-data">${key}: ${valueWithUnit} <span class="timestamp">Last updated: ${timestamp}</span></div>`;
                 });
             }
 
@@ -163,4 +199,5 @@
         };
     </script>
 </body>
+
 </html>
