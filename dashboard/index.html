@@ -170,9 +170,9 @@
                     'Temperature': '°C',
                     'Humidity': '%',
                     'Altitude': 'm',
-                    'X-Acceleration': 'G',
-                    'Y-Acceleration': 'G',
-                    'Z-Acceleration': 'G',
+                    'X-Acceleration': 'm/s²',
+                    'Y-Acceleration': 'm/s²',
+                    'Z-Acceleration': 'm/s²',
                     'X-Gyro': '°/s',
                     'Y-Gyro': '°/s',
                     'Z-Gyro': '°/s',
@@ -180,11 +180,15 @@
                     'Y-Magnet': 'µT',
                     'Z-Magnet': 'µT'
                 };
-                // Format the latitude and longitude to a fixed number of decimal places
+
                 if (key === 'Latitude' || key === 'Longitude') {
                     return (value / 10000000).toFixed(7); // Assuming the value is in degrees times 10^7
                 }
-                return value + (units[key] || '');
+                // Convert acceleration data from G to m/s² by multiplying by 9.81
+                if (key === 'X-Acceleration' || key === 'Y-Acceleration' || key === 'Z-Acceleration') {
+                    value = value * 9.81;
+                }
+                return value.toFixed(2) + (units[key] || '');
             }
 
             function updateMap(latitude, longitude) {
