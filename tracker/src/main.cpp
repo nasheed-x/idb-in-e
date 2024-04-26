@@ -165,14 +165,14 @@ void loop()
     lastCheckGNSS = millis();
     sendGNSSData();
   }
-  static long lastCheck = 0;
-   if (millis() - lastCheck > 250) // Sending data every 0.25 seconds
-  { 
-    lastCheck = millis();
-    sendLPS22HBData();
-    sendIMUMagnetometer();
-    sendIMUAcceleration();
-    sendIMUGyroscope();
-    sendHS300xData();
-  }
+  // static long lastCheck = 0;
+  //  if (millis() - lastCheck > 250) // Sending data every 0.25 seconds
+  // { 
+  //   lastCheck = millis();
+  //   sendLPS22HBData();
+  //   sendIMUMagnetometer();
+  //   sendIMUAcceleration();
+  //   sendIMUGyroscope();
+  //   sendHS300xData();
+  // }
 }

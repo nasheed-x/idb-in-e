@@ -13,30 +13,39 @@
             margin: 0;
             padding: 0;
             background-color: #f4f4f4;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-around;
-            align-items: flex-start;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            /* Three columns */
+            grid-template-rows: auto;
+            /* Rows size to content */
+            grid-gap: 20px;
+            /* Space between boxes */
+            padding: 20px;
         }
 
         h1 {
-            width: 100%;
+            grid-column: 1 / -1;
+            /* spans all columns */
             text-align: center;
             color: #333;
-            margin-top: 20px;
+            margin-top: 0;
         }
 
-        .sensor-box {
-            flex-basis: calc(33% - 40px);
+        .sensor-box,
+        #rawData {
             background: white;
             padding: 20px;
-            margin: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            min-width: 250px;
         }
 
-        .sensor-box h2 {
+        #rawData {
+            grid-column: 1 / -1;
+            /* This makes it span all columns in the grid */
+        }
+
+        .sensor-box h2,
+        #rawData h2 {
             color: #555;
             margin-bottom: 15px;
             text-align: center;
@@ -59,11 +68,10 @@
             font-size: 0.8em;
         }
 
-
         #map {
             height: 500px;
-            width: calc(85%);
-            margin: 20px;
+            grid-column: 1 / -1;
+            /* spans all columns */
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
@@ -90,6 +98,10 @@
     </div>
     <div id="sensorTemperature" class="sensor-box">
         <h2>Temperature & Humidity (HS300x)</h2>
+    </div>
+    <div id="rawData" class="sensor-box">
+        <h2>Raw Serial Input</h2>
+        <pre id="rawDataContent" style="white-space: pre-wrap;"></pre>
     </div>
 
     <!-- Include Leaflet JavaScript -->
@@ -119,6 +131,11 @@
                 console.log('Data received:', event.data);
                 const parsedData = JSON.parse(event.data);
                 displaySensorData(parsedData);
+
+                // Update raw data display
+                const rawDataElement = document.getElementById('rawDataContent');
+                rawDataElement.textContent = event.data;  // Show raw JSON data
+
                 if (parsedData.sensorId === 1) {
                     // Update the map for GPS data
                     const latitude = parsedData.data.Latitude / 10000000;
@@ -198,7 +215,7 @@
                     marker = L.marker([latitude, longitude]).addTo(map)
                         .bindPopup(`<b>GPS Coordinates:</b><br>Latitude: ${latitude}<br>Longitude: ${longitude}`);
                 }
-                map.setView([latitude, longitude], 13);
+                map.setView([latitude, longitude], 19);
             }
         };
     </script>
