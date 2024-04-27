@@ -14,18 +14,14 @@
             padding: 0;
             background-color: #f4f4f4;
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            /* Three columns */
+            grid-template-columns: repeat(4, 1fr);
             grid-template-rows: auto;
-            /* Rows size to content */
             grid-gap: 20px;
-            /* Space between boxes */
             padding: 20px;
         }
 
         h1 {
             grid-column: 1 / -1;
-            /* spans all columns */
             text-align: center;
             color: #333;
             margin-top: 0;
@@ -41,7 +37,6 @@
 
         #rawData {
             grid-column: 1 / -1;
-            /* This makes it span all columns in the grid */
         }
 
         .sensor-box h2,
@@ -71,9 +66,13 @@
         #map {
             height: 500px;
             grid-column: 1 / -1;
-            /* spans all columns */
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #signalData {
+            grid-column: 1 / -1;
+            /* Span across all columns */
         }
     </style>
 </head>
@@ -83,6 +82,13 @@
     <div id="map"></div>
     <div id="sensorGPS" class="sensor-box">
         <h2>GPS (SAM-M10Q)</h2>
+    </div>
+    <div id="sensorMyGPS" class="sensor-box">
+        <h2>MY GPS (SAM-M10Q)</h2>
+    </div>
+    <div id="sensorSignalInfo" class="sensor-box">
+        <h2>Signal Info</h2>
+        <div id="distance" class="sensor-data">Distance: Not available yet</div>
     </div>
     <div id="sensorBarometric" class="sensor-box">
         <h2>Barometric (LPS22HB)</h2>
@@ -107,15 +113,14 @@
     <!-- Include Leaflet JavaScript -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        // Initialize the map when the window loads
+        var map, rocketMarker, myMarker, connectionLine; // Added connectionLine
+
         window.onload = function () {
-            const map = L.map('map').setView([0, 0], 2);
+            map = L.map('map').setView([0, 0], 2); // Initialize map
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '© OpenStreetMap contributors'
             }).addTo(map);
-
-            let marker;
 
             const ws = new WebSocket('ws://localhost:3000');
 
@@ -130,94 +135,119 @@
             ws.onmessage = function (event) {
                 console.log('Data received:', event.data);
                 const parsedData = JSON.parse(event.data);
-                displaySensorData(parsedData);
-
-                // Update raw data display
-                const rawDataElement = document.getElementById('rawDataContent');
-                rawDataElement.textContent = event.data;  // Show raw JSON data
-
-                if (parsedData.sensorId === 1) {
-                    // Update the map for GPS data
-                    const latitude = parsedData.data.Latitude / 10000000;
-                    const longitude = parsedData.data.Longitude / 10000000;
-                    updateMap(latitude, longitude);
+                if (parsedData.type === 'sensor' && parsedData.sensorId) {
+                    updateSensorBox(parsedData.sensorId, parsedData.data);
+                    if (parsedData.sensorId === 1) { // Assuming '1' is the sensor ID for the sensor's GPS
+                        updateRocketPosition(parsedData.data.Latitude, parsedData.data.Longitude);
+                    } else if (parsedData.sensorId === 7) { // Assuming '7' is the sensor ID for your GPS
+                        updateMyPosition(parsedData.data.Latitude, parsedData.data.Longitude);
+                    }
                 }
             };
+        };
 
-            ws.onclose = function () {
-                console.log('WebSocket connection closed');
+        function updateSensorBox(sensorId, sensorData) {
+            const sensorMap = {
+                1: 'sensorGPS',
+                2: 'sensorBarometric',
+                3: 'sensorIMUAccel',
+                4: 'sensorIMUGyro',
+                5: 'sensorIMUMagnet',
+                6: 'sensorTemperature',
+                7: 'sensorMyGPS',
+                8: 'sensorSignalInfo'
             };
-
-            function displaySensorData({ sensorId, data }) {
-                const sensorMap = {
-                    1: 'sensorGPS',
-                    2: 'sensorBarometric',
-                    3: 'sensorIMUAccel',
-                    4: 'sensorIMUGyro',
-                    5: 'sensorIMUMagnet',
-                    6: 'sensorTemperature'
-                };
-                const elementId = sensorMap[sensorId];
-                if (elementId) {
-                    updateSensorBox(elementId, data);
-                }
-            }
-
-            function updateSensorBox(boxId, sensorData) {
-                const box = document.getElementById(boxId);
-                if (!box) {
-                    console.error('Box not found:', boxId);
-                    return;
-                }
-                // Get current timestamp
+            const elementId = sensorMap[sensorId];
+            const box = document.getElementById(elementId);
+            if (box) {
                 const now = new Date();
-                const timestamp = now.toLocaleTimeString(); // you can use toLocaleString() for date and time
-
-                box.innerHTML = `<h2>${box.querySelector('h2').textContent}</h2>`; // Clear old data
+                const timestamp = now.toLocaleTimeString();
+                box.innerHTML = `<h2>${box.querySelector('h2').textContent}</h2>`; // Reset the inner HTML
                 Object.entries(sensorData).forEach(([key, value]) => {
                     const valueWithUnit = formatData(key, value);
-                    // Include the timestamp in the updated data
                     box.innerHTML += `<div class="sensor-data">${key}: ${valueWithUnit} <span class="timestamp">Last updated: ${timestamp}</span></div>`;
                 });
+            } else {
+                console.error('Element not found for sensor ID:', sensorId);
             }
+        }
 
-            function formatData(key, value) {
-                const units = {
-                    'Pressure': 'kPa',
-                    'Temperature': '°C',
-                    'Humidity': '%',
-                    'Altitude': 'm',
-                    'X-Acceleration': 'm/s²',
-                    'Y-Acceleration': 'm/s²',
-                    'Z-Acceleration': 'm/s²',
-                    'X-Gyro': '°/s',
-                    'Y-Gyro': '°/s',
-                    'Z-Gyro': '°/s',
-                    'X-Magnet': 'µT',
-                    'Y-Magnet': 'µT',
-                    'Z-Magnet': 'µT'
-                };
+        function formatData(key, value) {
+            const units = {
+                'Pressure': 'kPa',
+                'Temperature': '°C',
+                'Humidity': '%',
+                'Altitude': 'm',
+                'X-Acceleration': 'm/s²',
+                'Y-Acceleration': 'm/s²',
+                'Z-Acceleration': 'm/s²',
+                'X-Gyro': '°/s',
+                'Y-Gyro': '°/s',
+                'Z-Gyro': '°/s',
+                'X-Magnet': 'µT',
+                'Y-Magnet': 'µT',
+                'Z-Magnet': 'µT',
+                'RSSI': 'dBm',
+                'SNR': 'dB'
+            };
+            return `${parseFloat(value).toFixed(2)} ${units[key] || ''}`;
+        }
 
-                if (key === 'Latitude' || key === 'Longitude') {
-                    return (value / 10000000).toFixed(7); // Assuming the value is in degrees times 10^7
-                }
-                // Convert acceleration data from G to m/s² by multiplying by 9.81
-                if (key === 'X-Acceleration' || key === 'Y-Acceleration' || key === 'Z-Acceleration') {
-                    value = value * 9.81;
-                }
-                return value.toFixed(2) + (units[key] || '');
-            }
+        function calculateAndUpdateDistance() {
+            if (rocketMarker && myMarker) {
+                var distance = rocketMarker.getLatLng().distanceTo(myMarker.getLatLng());
 
-            function updateMap(latitude, longitude) {
-                if (marker) {
-                    marker.setLatLng([latitude, longitude]);
+                // Draw or update the line
+                var latlngs = [rocketMarker.getLatLng(), myMarker.getLatLng()];
+                if (connectionLine) {
+                    // Update the existing line
+                    connectionLine.setLatLngs(latlngs);
                 } else {
-                    marker = L.marker([latitude, longitude]).addTo(map)
-                        .bindPopup(`<b>GPS Coordinates:</b><br>Latitude: ${latitude}<br>Longitude: ${longitude}`);
+                    // Create a new line and add it to the map
+                    connectionLine = L.polyline(latlngs, { color: 'red' }).addTo(map);
                 }
-                map.setView([latitude, longitude], 19);
+
+                map.fitBounds(L.latLngBounds(latlngs)); // Optional: Adjust map view to show both markers
+
+                var distanceElement = document.getElementById('distance');
+                if (distanceElement) {
+                    distanceElement.innerHTML = `Distance: ${Math.round(distance)} meters`;
+                } else {
+                    console.log('Distance element not found, creating one.');
+                    var signalBox = document.getElementById('sensorSignalInfo');
+                    if (signalBox) {
+                        signalBox.innerHTML += `<div id="distance" class="sensor-data">Distance: ${Math.round(distance)} meters</div>`;
+                    }
+                }
             }
-        };
+        }
+
+
+        function updateRocketPosition(latitude, longitude) {
+            const lat = latitude / 10000000;
+            const lng = longitude / 10000000;
+            if (rocketMarker) {
+                rocketMarker.setLatLng([lat, lng]);
+            } else {
+                rocketMarker = L.marker([lat, lng]).addTo(map)
+                    .bindPopup('Rocket GPS Coordinates');
+            }
+            map.setView([lat, lng], 12);
+            calculateAndUpdateDistance(); // Recalculate distance when rocket position is updated
+        }
+
+        function updateMyPosition(latitude, longitude) {
+            const lat = latitude / 10000000;
+            const lng = longitude / 10000000;
+            if (myMarker) {
+                myMarker.setLatLng([lat, lng]);
+            } else {
+                myMarker = L.marker([lat, lng]).addTo(map)
+                    .bindPopup('My GPS Coordinates');
+            }
+            // map.setView([lat, lng], 12);
+            calculateAndUpdateDistance(); // Recalculate distance when your position is updated
+        }
     </script>
 </body>
 
