@@ -14,7 +14,7 @@
             padding: 0;
             background-color: #f4f4f4;
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             grid-template-rows: auto;
             grid-gap: 20px;
             padding: 20px;
@@ -92,6 +92,10 @@
     </div>
     <div id="sensorBarometric" class="sensor-box">
         <h2>Barometric (LPS22HB)</h2>
+    </div>
+    <div id="sensorDistance" class="sensor-box">
+        <h2>Distance to Rocket</h2>
+        <div id="distanceDisplay" class="sensor-data">Distance: Not available yet</div>
     </div>
     <div id="sensorIMUAccel" class="sensor-box">
         <h2>IMU Acceleration (BMI270)</h2>
@@ -206,22 +210,16 @@
                     // Create a new line and add it to the map
                     connectionLine = L.polyline(latlngs, { color: 'red' }).addTo(map);
                 }
-
+                
                 map.fitBounds(L.latLngBounds(latlngs)); // Optional: Adjust map view to show both markers
 
-                var distanceElement = document.getElementById('distance');
-                if (distanceElement) {
-                    distanceElement.innerHTML = `Distance: ${Math.round(distance)} meters`;
-                } else {
-                    console.log('Distance element not found, creating one.');
-                    var signalBox = document.getElementById('sensorSignalInfo');
-                    if (signalBox) {
-                        signalBox.innerHTML += `<div id="distance" class="sensor-data">Distance: ${Math.round(distance)} meters</div>`;
-                    }
+                // Update the distance display in the dedicated sensor box
+                var distanceDisplay = document.getElementById('distanceDisplay');
+                if (distanceDisplay) {
+                    distanceDisplay.innerHTML = `Distance: ${Math.round(distance)} meters`;
                 }
             }
         }
-
 
         function updateRocketPosition(latitude, longitude) {
             const lat = latitude / 10000000;
@@ -245,7 +243,6 @@
                 myMarker = L.marker([lat, lng]).addTo(map)
                     .bindPopup('My GPS Coordinates');
             }
-            // map.setView([lat, lng], 12);
             calculateAndUpdateDistance(); // Recalculate distance when your position is updated
         }
     </script>

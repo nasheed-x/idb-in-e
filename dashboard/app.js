@@ -9,7 +9,7 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 const port = new SerialPort({
-  path: '/dev/cu.usbmodem1101',
+  path: '/dev/cu.usbmodem101',
   baudRate: 9600
 });
 
